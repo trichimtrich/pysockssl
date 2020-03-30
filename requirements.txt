@@ -1,0 +1,5 @@
+twisted
+kaitaistruct
+pyOpenSSL
+service_identity
+click
