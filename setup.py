@@ -10,6 +10,9 @@ from sockssl.__init__ import __version__
 # here - where we are.
 here = os.path.abspath(os.path.dirname(__file__))
 
+with open('README.md', 'r', encoding='utf-8') as fh:
+    long_description = fh.read()
+
 # read the package requirements for install_requires
 with open(os.path.join(here, 'requirements.txt'), 'r') as f:
     requirements = f.readlines()
@@ -17,14 +20,16 @@ with open(os.path.join(here, 'requirements.txt'), 'r') as f:
 # setup!
 setup(
     name='pysockssl',
-    description='mitm engine with socks4 + socks5 server and TLS cert store',
+    description='Simple TCP/TLS mitm engine supports SOCKSv4 + SOCKSv5 + Cert store',
     license='GPL v3',
 
     author='trichimtrich',
     author_email='trichimtrich@gmail.com',
 
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+
     url='https://github.com/trichimtrich/pysockssl',
-    download_url='https://github.com/trichimtrich/pysockssl/archive/' + __version__ + '.tar.gz',
 
     keywords=['mitm', 'proxy', 'ssl', 'tls', 'socksv4', 'socksv5', 'socks4', 'socks5'],
     version=__version__,
