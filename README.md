@@ -1,4 +1,4 @@
-# pysockssl
+# pySockSSL
 
 [![Python 3](https://img.shields.io/badge/python-3-blue.svg)](https://www.python.org/downloads/)
 
@@ -18,6 +18,7 @@ But more simple and focus on TCP/TLS stream capture ONLY - NO data analyzing ðŸ¤
 - SOCKSv5 + user/pwd auth
 - [Dummy] cert generator
 - SSL/TLS man-in-the-middle ðŸ˜Ž
+- API to intercept captured data
 
 ## Install
 
@@ -80,8 +81,9 @@ sockssl run v5 -c rootCA.crt -k rootCA.key -h 0.0.0.0 -p 9999 -u user1 pass1 -u 
 ## TODO
 
 - Interactive interface
-- API to use captured data
+- CLI addon to save dummy cert from rootCA
+- Blacklist / whitelist / passthru TLS Domain
 
 ## License
 
-GNU GPL
+GNU GPLv3

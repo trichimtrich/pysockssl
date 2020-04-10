@@ -109,6 +109,8 @@ class SOCKSv5Outgoing(protocol.Protocol):
 
 
 class SOCKSv5(protocol.Protocol, ISOCKS):
+    """Implementation of SOCKSv5 protocol compatiables with ISOCKS interface"""
+
     def __init__(self, reactor=reactor):
         self._reactor = reactor
         self._state = EnumState.TCP_INIT

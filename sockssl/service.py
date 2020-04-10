@@ -61,23 +61,23 @@ class SockService(object):
         self.cert_store = cert_store
 
     
-    def set_protocol(self, protocol: Any, users: Any):
+    def set_protocol(self, protocol: Any, users: Any = None):
         """Set protocol and users data for service to serve, usually SOCKv4 or SOCKSv5.
         
         Args:
             protocol (Any): Class of protocol you want to serve
-            users (Any): Auth users data of protocol. List[str] for SOCKSv4, List[Tuple[str, str]] for SOCKSv5
+            users (Any, optional): Auth users data of protocol. List[str] for SOCKSv4, List[Tuple[str, str]] for SOCKSv5. Defaults to None.
         """      
 
         self.protocol = protocol
         self.users = users
 
     
-    def set_data(self, data: Any):
+    def set_data(self, data: Any = None):
         """Set global data share between connection
         
         Args:
-            data (Any): Global data for that protocol (like auth data), will pass to SockFactory
+            data (Any, optional): Global data for that protocol (like auth data), will pass to SockFactory. Defaults to None.
         """        
 
         self.data = data

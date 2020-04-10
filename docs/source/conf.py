@@ -18,12 +18,13 @@ sys.setrecursionlimit(1500)
 
 # -- Project information -----------------------------------------------------
 
-project = 'pysockssl'
+project = 'pySockSSL'
 copyright = '2020, trichimtrich'
 author = 'trichimtrich'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+import sockssl
+release = sockssl.__version__
 
 
 # -- General configuration ---------------------------------------------------

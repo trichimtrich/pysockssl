@@ -15,6 +15,8 @@ class SOCKSv4Outgoing(TSOCKSv4Outgoing):
 
 
 class SOCKSv4(TSOCKSv4, ISOCKS):
+    """Implementation of SOCKSv4 protocol compatiables with ISOCKS interface"""
+
     def connectClass(self, host, port, klass, *args):
         return super().connectClass(host, port, SOCKSv4Outgoing, *args)
 
