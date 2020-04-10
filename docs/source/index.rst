@@ -30,7 +30,7 @@ Contents
    api
    more
 
-There are also `examples in the pySockSSL repository <https://github.com/trichimtrich/pysockssl/examples>`_ that may help you getting started.
+There are also `examples in the pySockSSL repository <https://github.com/trichimtrich/pysockssl/tree/master/examples>`_ that may help you getting started.
 
 Indices and tables
 -------------------
