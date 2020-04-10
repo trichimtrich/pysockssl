@@ -5,11 +5,13 @@ import click
 import os
 import sys
 
-from sockssl.myservice import MyService
+from sockssl.service import SockService
+from sockssl.protocol import SOCKSv4, SOCKSv5, ISOCKS
 from sockssl.certstore import CertStore
-from sockssl import mylog as log
+from sockssl import log
 
-log.init(log.INFO)
+
+log.init(log.DEBUG)
 
 
 @click.group()
@@ -76,10 +78,10 @@ def serve_forever(host, port, cert, key, format, protocol, users):
         cert_store = None
         click.secho("[!] No valid rootCA found. We can only capture raw TLS", fg="yellow")
 
-    service = MyService()
+    service = SockService()
     service.set_host_port(host, port)
     service.set_cert_store(cert_store)
-    service.set_protocol(protocol, users)
+    service.set_protocol(My, users)
 
     service.serve_forever()
 
@@ -98,7 +100,7 @@ def v4(users, host, port, cert, key, format):
     else:
         users = [encode(user) for user in users]
 
-    serve_forever(host, port, cert, key, format, 'v4', users)
+    serve_forever(host, port, cert, key, format, SOCKSv4, users)
 
 
 @run.command()
@@ -114,9 +116,10 @@ def v5(users, host, port, cert, key, format):
     if len(new_users) == 0:
         new_users = None
 
-    serve_forever(host, port, cert, key, format, 'v5', new_users)
+    serve_forever(host, port, cert, key, format, SOCKSv5, new_users)
 
 
+# add more options to 'run' command
 opt_cert = click.Option(['-c', '--cert'], type=str, help='rootCA certificate file')
 opt_key = click.Option(['-k', '--key'], type=str, help='rootCA private key file')
 opt_format = click.Option(['-f', '--format'],
@@ -130,6 +133,7 @@ opt_port = click.Option(['-p', '--port'], type=int, default=9999, show_default=T
 run_opts = [opt_cert, opt_key, opt_format, opt_host, opt_port]
 v4.params = run_opts + v4.params
 v5.params = run_opts + v5.params
+
 
 if __name__=="__main__":
     cli()

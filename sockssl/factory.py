@@ -3,22 +3,42 @@
 from twisted.internet.protocol import Factory
 from twisted.internet.threads import deferToThread
 import socket
+from typing import Any, List, Optional
 
-from sockssl.certstore import find_client_hello, is_sni
-from sockssl import mylog as log
-from sockssl.mysocks4 import MySOCKSv4
-from sockssl.mysocks5 import MySOCKSv5
+from sockssl.certstore import CertStore, find_client_hello, is_sni
+from sockssl import log
 
 
-class MyFactory(Factory):
-    def __init__(self, protocol, users, cert_store):
+class SockFactory(Factory):
+    """Twisted framework Protocol Factory:
+       store global context and produce protocol handler for each connection
+    """
+
+    def __init__(
+        self, protocol: Any, 
+        users: Any = None, 
+        cert_store: Optional[CertStore] = None, 
+        data: Any = None
+    ):
+        """Create a SockFactory instance
+        
+        Args:
+            protocol (Any): Class of protocol. SOCKSv4, SOCKSv5, ... or your class
+            users (Any, optional): Auth users data of protocol. Defaults to None.
+            cert_store (Optional[CertStore], optional): Instance of CertStore to do TLS mitm. Defaults to None.
+            data (Any, optional): Global data variable share between connection. Defaults to None.
+        """        
+
         self.protocol = protocol
         self.users = users
         self.cert_store = cert_store
+        self.data = data
 
 
     def do_sslpeek(self, client_socks, server_socks):
-        # not valid rootCA loaded, capture only raw TLS
+        # Connection calls this method for TLS mitm while establishing new SOCKS tunnel
+
+        # not doing TLS mitm, capture only raw TLS
         if self.cert_store is None:
             return
 
@@ -32,23 +52,25 @@ class MyFactory(Factory):
         deferred = deferToThread(self.sslpeek, client_socks, server_socks)
         deferred.addCallbacks(
             callback=self.sslpeek_cb, callbackArgs=(client_socks, server_socks),
-            errback=self.sslpeek_err, errbackArgs=(client_socks.peer, ),
+            errback=self.sslpeek_err, errbackArgs=(client_socks.peer_str, ),
         )
-        deferred.addErrback(self.sslpeek_cb_err, client_socks.peer)
+        deferred.addErrback(self.sslpeek_cb_err, client_socks.peer_str)
 
 
-    def sslpeek_err(self, err, peer):
+    def sslpeek_err(self, err, peer_str):
         # must be find_client_hello error, means not ssl
         pass
 
 
-    def sslpeek_cb_err(self, err, peer):
-        log.error("%s - %s", err)
+    def sslpeek_cb_err(self, err, peer_str):
+        log.error("%s - %s", peer_str, err)
 
 
     def sslpeek_cb(self, sni, client_socks, server_socks):
+        # Callback of sslpeek. Start TLS context for both side
+
         if sni:
-            log.debug("%s - SSL SNI: %s", client_socks.peer, sni)
+            log.debug("%s - SSL SNI: %s", client_socks.peer_str, sni)
             server_socks.transport.startTLS(self.cert_store.root_ctx())
             client_socks.transport.startTLS(self.cert_store.dummy_ctx(sni))
         else:
@@ -62,6 +84,8 @@ class MyFactory(Factory):
 
 
     def sslpeek(self, client_socks, server_socks):
+        # Read first packet and parse ClientHello if it is TLS handshake
+
         packet = client_socks.transport.socket.recv(65535, socket.MSG_PEEK)
         client_hello = find_client_hello(packet)
 

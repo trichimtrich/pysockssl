@@ -27,3 +27,7 @@ share/python-wheels/
 MANIFEST
 
 venv*
+.tox/
+.tox*/
+
+docs/build/

@@ -6,7 +6,9 @@ import socket
 from twisted.python import compat
 from twisted.internet import reactor, protocol, defer
 
-from sockssl import mylog as log
+from sockssl import log
+from sockssl.protocol.isocks import ISOCKS
+
 
 class EnumState(object):
     TCP_INIT = 1
@@ -80,13 +82,14 @@ class MyByteArray(bytearray):
 
 
 
-class MySOCKSv5Outgoing(protocol.Protocol):
+class SOCKSv5Outgoing(protocol.Protocol):
     def __init__(self, socks):
         self.socks = socks
 
 
     def connectionMade(self):
         peer = self.transport.getPeer()
+        self.socks.addr_server = peer
         self.socks.reply(EnumReply.SUCCEEDED, server=peer.host, port=peer.port)
         self.socks.otherConn = self
         self.socks.factory.do_sslpeek(self.socks, self)
@@ -105,24 +108,29 @@ class MySOCKSv5Outgoing(protocol.Protocol):
 
 
 
-class MySOCKSv5(protocol.Protocol):
+class SOCKSv5(protocol.Protocol, ISOCKS):
     def __init__(self, reactor=reactor):
         self._reactor = reactor
         self._state = EnumState.TCP_INIT
-
-        self.peer = None
+        self.peer_str = ''
 
 
     def connectionMade(self):
         peer = self.transport.getPeer()
-        self.peer = "{} {}:{}".format(peer.type, peer.host, peer.port)
-        log.debug("%s - Client connected", self.peer)
+        self.addr_client = peer
+        self.peer_str = "{} {}:{}".format(peer.type, peer.host, peer.port)
+        log.debug("%s - Client connected", self.peer_str)
         self._buf = MyByteArray()
         self.otherConn = None
+
+        # callback
+        self.on_connect()
 
 
     def dataReceived(self, data):
         if self.otherConn:
+            # callback
+            data = self.on_recv_client(data)
             self.otherConn.write(data)
             return
 
@@ -138,7 +146,11 @@ class MySOCKSv5(protocol.Protocol):
     def _die(self, msg=None):
         self._state = EnumState.DIE
         if msg != None: 
-            log.error("%s - %s", self.peer, msg, layer=1)
+            log.error("%s - %s", self.peer_str, msg, layer=1)
+        
+        # callback
+        self.on_socks_failed()
+        
         self.transport.loseConnection()
 
 
@@ -218,7 +230,7 @@ class MySOCKSv5(protocol.Protocol):
 
         # check now
         if self.factory.users[u_name] == pwd:
-            log.debug("%s - Authenticated", self.peer)
+            log.debug("%s - Authenticated", self.peer_str)
             self._reply_rfc1929(EnumSOCKS.AUTH_SUCCESS)
             self._state = EnumState.REQUEST
         else:
@@ -230,11 +242,14 @@ class MySOCKSv5(protocol.Protocol):
     def reply(self, reply, addr_type=EnumSOCKS.ATYP_IPV4, server="127.0.0.1", port=8888, msg=None):
         svr_int = struct.unpack("!I", socket.inet_aton(server))[0]
         self.transport.write(struct.pack("!4BIH", EnumSOCKS.VERSION, reply, 0, addr_type, svr_int, port))
-        if reply != EnumReply.SUCCEEDED:
-            self._die(msg)
-        else:
-            log.info("%s - SOCKS established", self.peer)
+        if reply == EnumReply.SUCCEEDED:
+            log.debug("%s - SOCKS established", self.peer_str)
             self._state = EnumState.DONE
+
+            # callback
+            self.on_socks_established()
+        else:
+            self._die(msg)
 
 
     def _request(self):
@@ -275,7 +290,7 @@ class MySOCKSv5(protocol.Protocol):
 
     def _request2(self, server, port, cmd):
         if cmd == EnumSOCKS.CMD_CONNECT:
-            d = self.connectClass(server, port, MySOCKSv5Outgoing, self)
+            d = self.connectClass(server, port, SOCKSv5Outgoing, self)
             d.addErrback(lambda result, self = self: self.reply(EnumReply.CONNECTION_REFUSED))
         elif cmd == EnumSOCKS.CMD_UDP_ASSOCIATE:
             pass
@@ -288,12 +303,17 @@ class MySOCKSv5(protocol.Protocol):
         if self.otherConn:
             self.otherConn.transport.loseConnection()
 
-        log.info("%s - Client disconnected", self.peer)
+        log.debug("%s - Client disconnected", self.peer_str)
+
+        # callback
+        self.on_disconnect()
 
 
     def connectClass(self, host, port, klass, *args):
         return protocol.ClientCreator(self._reactor, klass, *args).connectTCP(host,port)
 
 
-    def write(self,data):
+    def write(self, data):
+        # callback
+        data = self.on_recv_server(data)
         self.transport.write(data)
