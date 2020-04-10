@@ -60,3 +60,5 @@ html_static_path = ['_static']
 
 autodoc_typehints = 'none'
 napoleon_include_init_with_doc = True
+
+master_doc = 'index'
