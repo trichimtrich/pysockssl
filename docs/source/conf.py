@@ -23,8 +23,8 @@ copyright = '2020, trichimtrich'
 author = 'trichimtrich'
 
 # The full version, including alpha/beta/rc tags
-import sockssl
-release = sockssl.__version__
+from sockssl.__init__ import __version__
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
